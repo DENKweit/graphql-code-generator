@@ -666,16 +666,20 @@ ${this._gql(node)}
   }
 
   public OperationDefinition(node: OperationDefinitionNode): string {
-    return node.operation === 'subscription'
-      ? `${indentMultiline(this.getExecuteFunctionSubscriptionsSignature(this.config.generateAsync, node), 1)}
-${indentMultiline(this.getGQLVar(node, !this.config.generateAsync), 2)}
-${indentMultiline(this.getResponseClass(node), 2)}
-${indentMultiline(this.getExecuteFunctionSubscriptionsBody(this.config.generateAsync, node), 2)}
-`
-      : `${indentMultiline(this.getExecuteFunctionSignature(this.config.generateAsync, node), 1)}
-${indentMultiline(this.getGQLVar(node), 2)}
-${indentMultiline(this.getResponseClass(node), 2)}
-${indentMultiline(this.getExecuteFunctionBody(this.config.generateAsync, node), 2)}
-`;
+    const ret: string[] = [];
+    if (node.operation === 'subscription') {
+      ret.push(`${this.getGQLVar(node, !this.config.generateAsync)}
+${this.getResponseClass(node)}`);
+
+      ret.push(`${indentMultiline(this.getExecuteFunctionSubscriptionsSignature(this.config.generateAsync, node), 1)}
+${indentMultiline(this.getExecuteFunctionSubscriptionsBody(this.config.generateAsync, node), 2)}`);
+    } else {
+      ret.push(`${this.getGQLVar(node)}
+${this.getResponseClass(node)}`);
+
+      ret.push(`${indentMultiline(this.getExecuteFunctionSignature(this.config.generateAsync, node), 1)}
+${indentMultiline(this.getExecuteFunctionBody(this.config.generateAsync, node), 2)}`);
+    }
+    return ret.join('=$(§%/(=)$§(%=)$§=(%=§$)%/HGJDGSDG=()§§');
   }
 }

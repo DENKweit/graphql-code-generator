@@ -222,9 +222,9 @@ export class PyVisitor<
       .withName(this.convertName(node))
       .withComment((node.description as any) as string)
       .withBlock(
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
         node.fields
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
           .sort((a: string, b: string) => {
             const aOptional = a.indexOf('Optional') > 0;
             const bOptional = b.indexOf('Optional') > 0;

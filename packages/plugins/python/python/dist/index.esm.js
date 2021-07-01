@@ -221,7 +221,6 @@ const csharpKeywords = [
     'while',
 ];
 
-/* eslint-disable no-console */
 const flatMap = require('array.prototype.flatmap');
 class PyVisitor extends BaseTypesVisitor {
     constructor(schema, pluginConfig, additionalConfig = {}) {
@@ -348,10 +347,10 @@ class PyVisitor extends BaseTypesVisitor {
             .asKind(this._parsedConfig.declarationKind.input)
             .withName(this.convertName(node))
             .withComment(node.description)
-            .withBlock(
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        node.fields.sort((a, b) => {
+            .withBlock(node.fields
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            .sort((a, b) => {
             const aOptional = a.indexOf('Optional') > 0;
             const bOptional = b.indexOf('Optional') > 0;
             if (aOptional) {
@@ -367,7 +366,8 @@ class PyVisitor extends BaseTypesVisitor {
                 return -1;
             }
             return 0;
-        }).join('\n'));
+        })
+            .join('\n'));
     }
     getArgumentsObjectDeclarationBlock(node, name, field) {
         return new PythonDeclarationBlock(this._declarationBlockConfig)

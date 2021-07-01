@@ -172,11 +172,20 @@ export const plugin: PluginFunction<PythonOperationsRawPluginConfig> = (
 
   const visitor = new PythonOperationsVisitor(schema, allFragments, config, documents);
   const visitorResult = visit(allAst, { leave: visitor });
+  const varAndMethodSep = '=$(§%/(=)$§(%=)$§=(%=§$)%/HGJDGSDG=()§§';
+  const filteredReults = visitorResult.definitions.filter(t => typeof t === 'string');
+  const vars: string[] = [];
+  const methods: string[] = [];
+
+  filteredReults.forEach(r => {
+    const varAndMethod = r.split(varAndMethodSep, 2);
+    vars.push(varAndMethod[0]);
+    methods.push(varAndMethod[1]);
+  });
+
   return {
     prepend: [],
-    content: [getImports(config), getClient(config), ...visitorResult.definitions.filter(t => typeof t === 'string')]
-      .filter(a => a)
-      .join('\n'),
+    content: [getImports(config), ...vars, getClient(config), ...methods].filter(a => a).join('\n'),
   };
 };
 

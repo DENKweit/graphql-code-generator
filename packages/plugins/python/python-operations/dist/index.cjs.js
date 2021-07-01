@@ -762,17 +762,20 @@ ${this._gql(node)}
         return this._getResponseFieldRecursive(node, operationSchema, false, (_b = (_a = node.name) === null || _a === void 0 ? void 0 : _a.value) !== null && _b !== void 0 ? _b : '');
     }
     OperationDefinition(node) {
-        return node.operation === 'subscription'
-            ? `${visitorPluginCommon.indentMultiline(this.getExecuteFunctionSubscriptionsSignature(this.config.generateAsync, node), 1)}
-${visitorPluginCommon.indentMultiline(this.getGQLVar(node, !this.config.generateAsync), 2)}
-${visitorPluginCommon.indentMultiline(this.getResponseClass(node), 2)}
-${visitorPluginCommon.indentMultiline(this.getExecuteFunctionSubscriptionsBody(this.config.generateAsync, node), 2)}
-`
-            : `${visitorPluginCommon.indentMultiline(this.getExecuteFunctionSignature(this.config.generateAsync, node), 1)}
-${visitorPluginCommon.indentMultiline(this.getGQLVar(node), 2)}
-${visitorPluginCommon.indentMultiline(this.getResponseClass(node), 2)}
-${visitorPluginCommon.indentMultiline(this.getExecuteFunctionBody(this.config.generateAsync, node), 2)}
-`;
+        const ret = [];
+        if (node.operation === 'subscription') {
+            ret.push(`${this.getGQLVar(node, !this.config.generateAsync)}
+${this.getResponseClass(node)}`);
+            ret.push(`${visitorPluginCommon.indentMultiline(this.getExecuteFunctionSubscriptionsSignature(this.config.generateAsync, node), 1)}
+${visitorPluginCommon.indentMultiline(this.getExecuteFunctionSubscriptionsBody(this.config.generateAsync, node), 2)}`);
+        }
+        else {
+            ret.push(`${this.getGQLVar(node)}
+${this.getResponseClass(node)}`);
+            ret.push(`${visitorPluginCommon.indentMultiline(this.getExecuteFunctionSignature(this.config.generateAsync, node), 1)}
+${visitorPluginCommon.indentMultiline(this.getExecuteFunctionBody(this.config.generateAsync, node), 2)}`);
+        }
+        return ret.join("=$(§%/(=)$§(%=)$§=(%=§$)%/HGJDGSDG=()§§");
     }
 }
 
@@ -929,9 +932,18 @@ const plugin = (schema, documents, config) => {
     ];
     const visitor = new PythonOperationsVisitor(schema, allFragments, config, documents);
     const visitorResult = graphql.visit(allAst, { leave: visitor });
+    const varAndMethodSep = "=$(§%/(=)$§(%=)$§=(%=§$)%/HGJDGSDG=()§§";
+    const filteredReults = visitorResult.definitions.filter(t => typeof t === 'string');
+    const vars = [];
+    const methods = [];
+    filteredReults.forEach(r => {
+        const varAndMethod = r.split(varAndMethodSep, 2);
+        vars.push(varAndMethod[0]);
+        methods.push(varAndMethod[1]);
+    });
     return {
         prepend: [],
-        content: [getImports(config), getClient(config), ...visitorResult.definitions.filter(t => typeof t === 'string')]
+        content: [getImports(config), ...vars, getClient(config), ...methods]
             .filter(a => a)
             .join('\n'),
     };
