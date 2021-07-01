@@ -221,7 +221,29 @@ export class PyVisitor<
       .asKind(this._parsedConfig.declarationKind.input)
       .withName(this.convertName(node))
       .withComment((node.description as any) as string)
-      .withBlock(node.fields.join('\n'));
+      .withBlock(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        node.fields
+          .sort((a: string, b: string) => {
+            const aOptional = a.indexOf('Optional') > 0;
+            const bOptional = b.indexOf('Optional') > 0;
+            if (aOptional) {
+              if (bOptional) {
+                return 0;
+              }
+              return 1;
+            }
+            if (bOptional) {
+              if (aOptional) {
+                return 0;
+              }
+              return -1;
+            }
+            return 0;
+          })
+          .join('\n')
+      );
   }
 
   getArgumentsObjectDeclarationBlock(
@@ -250,8 +272,11 @@ export class PyVisitor<
 
   InputValueDefinition(node: InputValueDefinitionNode): string {
     const comment = transformPythonComment(node.description, 1);
-
-    return comment + indent(`${this.convertSafeName(node.name)}: ${node.type}`);
+    let valueDefinition = indent(`${this.convertSafeName(node.name)}: ${node.type}`);
+    if (valueDefinition.indexOf('Optional') > 0) {
+      valueDefinition = valueDefinition + ' = None';
+    }
+    return comment + valueDefinition;
   }
 
   protected buildEnumValuesBlock(typeName: string, values: ReadonlyArray<EnumValueDefinitionNode>) {

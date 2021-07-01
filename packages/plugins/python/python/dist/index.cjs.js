@@ -227,6 +227,7 @@ const csharpKeywords = [
     'while',
 ];
 
+/* eslint-disable no-console */
 const flatMap = require('array.prototype.flatmap');
 class PyVisitor extends visitorPluginCommon.BaseTypesVisitor {
     constructor(schema, pluginConfig, additionalConfig = {}) {
@@ -353,7 +354,26 @@ class PyVisitor extends visitorPluginCommon.BaseTypesVisitor {
             .asKind(this._parsedConfig.declarationKind.input)
             .withName(this.convertName(node))
             .withComment(node.description)
-            .withBlock(node.fields.join('\n'));
+            .withBlock(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        node.fields.sort((a, b) => {
+            const aOptional = a.indexOf('Optional') > 0;
+            const bOptional = b.indexOf('Optional') > 0;
+            if (aOptional) {
+                if (bOptional) {
+                    return 0;
+                }
+                return 1;
+            }
+            if (bOptional) {
+                if (aOptional) {
+                    return 0;
+                }
+                return -1;
+            }
+            return 0;
+        }).join('\n'));
     }
     getArgumentsObjectDeclarationBlock(node, name, field) {
         return new PythonDeclarationBlock(this._declarationBlockConfig)
@@ -375,7 +395,11 @@ class PyVisitor extends visitorPluginCommon.BaseTypesVisitor {
     }
     InputValueDefinition(node) {
         const comment = transformPythonComment(node.description, 1);
-        return comment + visitorPluginCommon.indent(`${this.convertSafeName(node.name)}: ${node.type}`);
+        let valueDefinition = visitorPluginCommon.indent(`${this.convertSafeName(node.name)}: ${node.type}`);
+        if (valueDefinition.indexOf('Optional') > 0) {
+            valueDefinition = valueDefinition + ' = None';
+        }
+        return comment + valueDefinition;
     }
     buildEnumValuesBlock(typeName, values) {
         return values
