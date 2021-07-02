@@ -5,6 +5,7 @@ import { PythonOperationsVisitor } from './visitor';
 import { extname } from 'path';
 import gql from 'graphql-tag';
 import { PythonOperationsRawPluginConfig } from './config';
+import { csharpKeywords } from '../../common/keywords';
 
 const getImports = (config: PythonOperationsRawPluginConfig) => {
   return `
@@ -21,17 +22,18 @@ import websocket
 import uuid
 import json
 
+keywords = [${csharpKeywords.map(s => `'${s}'`).join(', ')}]
+
 def remove_empty(dict_or_list):
     if isinstance(dict_or_list, dict):
-        delete_keys = []
+        new_dict = {}
         for key, value in dict_or_list.items():
-            if value == {}:
-              delete_keys.append(key)
-            else:
-              dict_or_list[key] = remove_empty(value)  
-        for key in delete_keys:
-          del dict_or_list[key]
-        return dict_or_list
+            if value != {}:
+              newkey = key
+              if key in keywords:
+                newkey = '_' + key
+              new_dict[newkey] = remove_empty(value)  
+        return new_dict
     elif isinstance(dict_or_list, list):
         delete_indices = []
         for idx, object_in_list in enumerate(dict_or_list):
