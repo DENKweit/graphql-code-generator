@@ -371,7 +371,7 @@ class PythonOperationsVisitor extends visitorPluginCommon.ClientSideBaseVisitor 
         const hasInputArgs = !!(inputs === null || inputs === void 0 ? void 0 : inputs.length);
         const inputSignatures = hasInputArgs ? inputs.map(sig => sig.signature).join(', ') : '';
         return `
-${isAsync ? 'async ' : ''}def ${camelToSnakeCase(this.convertName(node)).toLowerCase()}(self${hasInputArgs ? ', ' : ''}${inputSignatures}, **kwargs):
+${isAsync ? 'async ' : ''}def ${camelToSnakeCase(this.convertName(node)).toLowerCase()}(self${hasInputArgs ? ', ' : ''}${inputSignatures}, **execute_kwargs):
 `;
     }
     getExecuteFunctionBody(isAsync, node) {
@@ -423,7 +423,7 @@ response_dict = await response_text_promise`
 response_dict = self.__client.execute(
   _gql_${this._get_node_name(node)},
   variable_values=variables_no_none,
-  upload_files=kwargs["upload_files"] if "upload_files" in kwargs else False
+  **execute_kwargs
 )`}
 
 response_dict = remove_empty(response_dict)
