@@ -144,7 +144,7 @@ export class PythonOperationsVisitor extends ClientSideBaseVisitor<
       signature: !listType
         ? `${name}: ${baseType}${!required ? ' = None' : ''}`
         : `${name}: ${'List['.repeat(getListTypeDepth(listType))}${baseType}${']'.repeat(getListTypeDepth(listType))}`,
-      value: isInputAScalar ? name : `asdict(${name})`,
+      value: isInputAScalar ? name : `to_dict(${name})`,
     };
   }
 
@@ -203,7 +203,7 @@ export class PythonOperationsVisitor extends ClientSideBaseVisitor<
     return `
 ${isAsync ? 'async ' : ''}def ${camelToSnakeCase(this.convertName(node)).toLowerCase()}(self${
       hasInputArgs ? ', ' : ''
-    }${inputSignatures}):
+    }${inputSignatures}, **kwargs):
 `;
   }
 
@@ -262,9 +262,10 @@ response_text_promise = self.__async_client.execute_async(
 )
 response_dict = await response_text_promise`
     : `
-response_dict = self.__client.execute_sync(
+response_dict = self.__client.execute(
   _gql_${this._get_node_name(node)},
   variable_values=variables_no_none,
+  upload_files=kwargs["upload_files"] if "upload_files" in kwargs else False
 )`
 }
 

@@ -45,6 +45,30 @@ def remove_empty(dict_or_list):
     else:
         return dict_or_list
 
+def to_dict(obj):
+  if isinstance(obj, dict):
+    for k,v in obj.items():
+      if v is None:
+        del obj[k]
+      else:
+        obj[k] = to_dict(v)
+    return obj
+  elif isinstance(obj, list):
+    new_list = []
+    for objs in obj:
+      if objs is not None:
+        new_list.append(to_dict(objs))
+    return new_list
+  elif hasattr(type(obj), '__dataclass_fields__'):
+    new_dict = {}
+    for k,v in obj.__dict__.items():
+      if v is not None:
+        new_dict[k] = to_dict(v)
+    return new_dict
+  else:
+    return obj
+
+
 ${
   !config.generateAsync
     ? `
@@ -142,7 +166,7 @@ class Client:
 
     `
         : `
-    self.__http_transport = RequestsHTTPTransport(url=http_url, headers=headers)
+    self.__http_transport = AIOHTTPTransport(url=http_url, headers=headers)
     self.__client = GqlClient(transport=self.__http_transport, fetch_schema_from_transport=False)
 
     self.__websocket_client = WebsocketClient(url=ws_url, connection_payload=ws_connection_payload)

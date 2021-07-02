@@ -322,7 +322,7 @@ class PythonOperationsVisitor extends visitorPluginCommon.ClientSideBaseVisitor 
             signature: !listType
                 ? `${name}: ${baseType}${!required ? ' = None' : ''}`
                 : `${name}: ${'List['.repeat(getListTypeDepth(listType))}${baseType}${']'.repeat(getListTypeDepth(listType))}`,
-            value: isInputAScalar ? name : `asdict(${name})`,
+            value: isInputAScalar ? name : `to_dict(${name})`,
         };
     }
     _operationSuffix(operationType) {
@@ -371,7 +371,7 @@ class PythonOperationsVisitor extends visitorPluginCommon.ClientSideBaseVisitor 
         const hasInputArgs = !!(inputs === null || inputs === void 0 ? void 0 : inputs.length);
         const inputSignatures = hasInputArgs ? inputs.map(sig => sig.signature).join(', ') : '';
         return `
-${isAsync ? 'async ' : ''}def ${camelToSnakeCase(this.convertName(node)).toLowerCase()}(self${hasInputArgs ? ', ' : ''}${inputSignatures}):
+${isAsync ? 'async ' : ''}def ${camelToSnakeCase(this.convertName(node)).toLowerCase()}(self${hasInputArgs ? ', ' : ''}${inputSignatures}, **kwargs):
 `;
     }
     getExecuteFunctionBody(isAsync, node) {
@@ -420,9 +420,10 @@ response_text_promise = self.__async_client.execute_async(
 )
 response_dict = await response_text_promise`
             : `
-response_dict = self.__client.execute_sync(
+response_dict = self.__client.execute(
   _gql_${this._get_node_name(node)},
   variable_values=variables_no_none,
+  upload_files=kwargs["upload_files"] if "upload_files" in kwargs else False
 )`}
 
 response_dict = remove_empty(response_dict)
@@ -775,7 +776,7 @@ ${this.getResponseClass(node)}`);
             ret.push(`${visitorPluginCommon.indentMultiline(this.getExecuteFunctionSignature(this.config.generateAsync, node), 1)}
 ${visitorPluginCommon.indentMultiline(this.getExecuteFunctionBody(this.config.generateAsync, node), 2)}`);
         }
-        return ret.join("=$(§%/(=)$§(%=)$§=(%=§$)%/HGJDGSDG=()§§");
+        return ret.join('=$(§%/(=)$§(%=)$§=(%=§$)%/HGJDGSDG=()§§');
     }
 }
 
@@ -817,6 +818,30 @@ def remove_empty(dict_or_list):
         return dict_or_list
     else:
         return dict_or_list
+
+def to_dict(obj):
+  if isinstance(obj, dict):
+    for k,v in obj.items():
+      if v is None:
+        del obj[k]
+      else:
+        obj[k] = to_dict(v)
+    return obj
+  elif isinstance(obj, list):
+    new_list = []
+    for objs in obj:
+      if objs is not None:
+        new_list.append(to_dict(objs))
+    return new_list
+  elif hasattr(type(obj), '__dataclass_fields__'):
+    new_dict = {}
+    for k,v in obj.__dict__.items():
+      if v is not None:
+        new_dict[k] = to_dict(v)
+    return new_dict
+  else:
+    return obj
+
 
 ${!config.generateAsync
         ? `
@@ -911,7 +936,7 @@ class Client:
 
     `
         : `
-    self.__http_transport = RequestsHTTPTransport(url=http_url, headers=headers)
+    self.__http_transport = AIOHTTPTransport(url=http_url, headers=headers)
     self.__client = GqlClient(transport=self.__http_transport, fetch_schema_from_transport=False)
 
     self.__websocket_client = WebsocketClient(url=ws_url, connection_payload=ws_connection_payload)
@@ -932,7 +957,7 @@ const plugin = (schema, documents, config) => {
     ];
     const visitor = new PythonOperationsVisitor(schema, allFragments, config, documents);
     const visitorResult = graphql.visit(allAst, { leave: visitor });
-    const varAndMethodSep = "=$(§%/(=)$§(%=)$§=(%=§$)%/HGJDGSDG=()§§";
+    const varAndMethodSep = '=$(§%/(=)$§(%=)$§=(%=§$)%/HGJDGSDG=()§§';
     const filteredReults = visitorResult.definitions.filter(t => typeof t === 'string');
     const vars = [];
     const methods = [];
@@ -943,9 +968,7 @@ const plugin = (schema, documents, config) => {
     });
     return {
         prepend: [],
-        content: [getImports(config), ...vars, getClient(config), ...methods]
-            .filter(a => a)
-            .join('\n'),
+        content: [getImports(config), ...vars, getClient(config), ...methods].filter(a => a).join('\n'),
     };
 };
 const addToSchema = gql `
