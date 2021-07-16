@@ -5,7 +5,7 @@
     "postinstall": "patch-package && husky install",
     "clean": "rimraf node_modules packages/{*,plugins/*/*,presets/*,utils/*}/node_modules",
     "prebuild": "rimraf packages/{*,plugins/*/*,presets/*,utils/*}/dist",
-    "build": "tsc --project tsconfig.json && bob build && npm run tempcopy",
+    "build": "tsc --project tsconfig.json && bob build",
     "build-watch-success": "bob build && npm run tempcopy",
     "tempcopy": "npm run tempcopy1 && npm run tempcopy2 && npm run tempcopy3 && npm run tempcopy4",
     "tempcopy1": "rsync -av --exclude node_modules ./packages/plugins/python/python/* ~/git/worker/platform_api/node_modules/@graphql-codegen/python",

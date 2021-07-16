@@ -937,8 +937,8 @@ class Client:
 
     `
         : `
-    self.__http_transport = AIOHTTPTransport(url=http_url, headers=headers)
-    self.__client = GqlClient(transport=self.__http_transport, fetch_schema_from_transport=False)
+    self.__http_transport = AIOHTTPTransport(url=http_url, headers=headers, timeout=300)
+    self.__client = GqlClient(transport=self.__http_transport, fetch_schema_from_transport=False, execute_timeout=300)
 
     self.__websocket_client = WebsocketClient(url=ws_url, connection_payload=ws_connection_payload)
 
