@@ -923,8 +923,8 @@ class Client:
     ${config.generateAsync
         ? `
 
-    self.__async_transport = AIOHTTPTransport(url=http_url, headers=headers)
-    self.__async_client = GqlClient(transport=self.__async_transport, fetch_schema_from_transport=False)
+    self.__async_transport = AIOHTTPTransport(url=http_url, headers=headers, timeout=300)
+    self.__async_client = GqlClient(transport=self.__async_transport, fetch_schema_from_transport=False, execute_timeout=300)
 
     self.__websocket_transport = WebsocketsTransport(url=ws_url, init_payload=headers)
     self.__websocket_client = GqlClient(transport=self.__websocket_transport, fetch_schema_from_transport=False)
