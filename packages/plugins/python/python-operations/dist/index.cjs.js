@@ -289,6 +289,9 @@ class PythonOperationsVisitor extends visitorPluginCommon.ClientSideBaseVisitor 
     }
     convertSafeName(node) {
         const name = typeof node === 'string' ? node : node.value;
+        if (name === '__typename') {
+            return 'typename';
+        }
         return this.keywords.has(name) ? `_${name}` : name;
     }
     // Some settings aren't supported with C#, overruled here
@@ -427,6 +430,7 @@ response_dict = self.__client.execute(
 )`}
 
 response_dict = remove_empty(response_dict)
+response_dict = rename_typename_keys(response_dict)
 ret: ${resposeClass} = from_dict(data_class=${resposeClass}, data=response_dict, config=Config(cast=[Enum], check_types=False))
 return ret
 `;
@@ -628,10 +632,19 @@ ${this._gql(node)}
             }
             case graphql.Kind.FIELD: {
                 const fieldSchema = parentSchema.fields.find(f => f.name.value === node.name.value);
-                if (!fieldSchema) {
+                if (!fieldSchema && node.name.value !== '__typename') {
                     throw new Error(`Field schema not found; ${node.name.value}`);
                 }
-                const responseType = this.resolveFieldType(fieldSchema.type);
+                const responseType = node.name.value !== '__typename'
+                    ? this.resolveFieldType(fieldSchema.type)
+                    : new PythonFieldType({
+                        baseType: {
+                            type: 'str',
+                            required: true,
+                            valueType: false,
+                        },
+                        listType: undefined,
+                    });
                 if (!node.selectionSet) {
                     const responseTypeName = wrapFieldType(responseType, responseType.listType, 'List');
                     if (!fieldAsFragment) {
@@ -796,6 +809,14 @@ import uuid
 import json
 
 keywords = [${csharpKeywords.map(s => `'${s}'`).join(', ')}]
+
+def rename_typename_keys(d: dict):
+  if isinstance(d, dict):
+    return {"typename" if k == "__typename" else k: rename_typename_keys(v) for k,v in d.items()}
+  elif isinstance(d, list):
+    return [rename_typename_keys(v) for v in d]
+  return d
+
 
 def remove_empty(dict_or_list):
     if isinstance(dict_or_list, dict):

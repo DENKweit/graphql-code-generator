@@ -24,6 +24,14 @@ import json
 
 keywords = [${csharpKeywords.map(s => `'${s}'`).join(', ')}]
 
+def rename_typename_keys(d: dict):
+  if isinstance(d, dict):
+    return {"typename" if k == "__typename" else k: rename_typename_keys(v) for k,v in d.items()}
+  elif isinstance(d, list):
+    return [rename_typename_keys(v) for v in d]
+  return d
+
+
 def remove_empty(dict_or_list):
     if isinstance(dict_or_list, dict):
         new_dict = {}

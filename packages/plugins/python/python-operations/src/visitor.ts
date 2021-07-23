@@ -103,6 +103,9 @@ export class PythonOperationsVisitor extends ClientSideBaseVisitor<
 
   private convertSafeName(node: NameNode | string): string {
     const name = typeof node === 'string' ? node : node.value;
+    if (name === '__typename') {
+      return 'typename';
+    }
     return this.keywords.has(name) ? `_${name}` : name;
   }
 
@@ -270,6 +273,7 @@ response_dict = self.__client.execute(
 }
 
 response_dict = remove_empty(response_dict)
+response_dict = rename_typename_keys(response_dict)
 ret: ${resposeClass} = from_dict(data_class=${resposeClass}, data=response_dict, config=Config(cast=[Enum], check_types=False))
 return ret
 `;
@@ -501,10 +505,20 @@ ${this._gql(node)}
       }
       case Kind.FIELD: {
         const fieldSchema = parentSchema.fields.find(f => f.name.value === node.name.value);
-        if (!fieldSchema) {
+        if (!fieldSchema && node.name.value !== '__typename') {
           throw new Error(`Field schema not found; ${node.name.value}`);
         }
-        const responseType = this.resolveFieldType(fieldSchema.type);
+        const responseType =
+          node.name.value !== '__typename'
+            ? this.resolveFieldType(fieldSchema.type)
+            : new PythonFieldType({
+                baseType: {
+                  type: 'str',
+                  required: true,
+                  valueType: false,
+                },
+                listType: undefined,
+              });
 
         if (!node.selectionSet) {
           const responseTypeName = wrapFieldType(responseType, responseType.listType, 'List');
