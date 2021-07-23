@@ -520,6 +520,7 @@ async with self.__websocket_client as client:
   )
   async for response_dict in generator:
     response_dict = remove_empty(response_dict)
+    response_dict = rename_typename_keys(response_dict)
     ret: ${resposeClass} = from_dict(data_class=${resposeClass}, data=response_dict, config=Config(cast=[Enum], check_types=False))
     yield ret
     `
@@ -533,6 +534,7 @@ generator = self.__websocket_client.call(
 )
 
 for response_dict in generator:
+  response_dict = rename_typename_keys(response_dict)
   response_dict = remove_empty(response_dict)
   ret: ${resposeClass} = from_dict(data_class=${resposeClass}, data=response_dict, config=Config(cast=[Enum], check_types=False))
   yield ret
