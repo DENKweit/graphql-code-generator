@@ -316,7 +316,7 @@ class PyVisitor extends visitorPluginCommon.BaseTypesVisitor {
         const allFields = [...node.fields];
         if (this.config.addTypename) {
             const typename = node.name;
-            const typeString = this.config.typenameAsString ? 'Scalars.String' : `Literal["${typename}"]`;
+            const typeString = this.config.typenameAsString ? 'ScalarString' : `Literal["${typename}"]`;
             const type = this.config.nonOptionalTypename ? typeString : `Optional[${typeString}]`;
             allFields.unshift(visitorPluginCommon.indent(`__typename: ${type}`));
         }
