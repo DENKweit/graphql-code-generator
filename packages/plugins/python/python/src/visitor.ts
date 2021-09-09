@@ -169,7 +169,7 @@ export class PyVisitor<
     const allFields = ([...node.fields] as unknown) as string[];
     if (this.config.addTypename) {
       const typename = node.name;
-      const typeString = this.config.typenameAsString ? 'Scalars.String' : `Literal["${typename}"]`;
+      const typeString = this.config.typenameAsString ? 'ScalarString' : `Literal["${typename}"]`;
 
       const type = this.config.nonOptionalTypename ? typeString : `Optional[${typeString}]`;
 
