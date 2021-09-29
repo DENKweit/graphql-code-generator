@@ -13,7 +13,7 @@ from typing import Any, List, Dict, Optional, Union, AsyncGenerator, Type
 from dataclasses import dataclass
 from dataclasses import asdict
 from gql import gql, Client as GqlClient
-from gql.transport.aiohttp import AIOHTTPTransport
+${config.generateAsync ? 'from gql.transport.aiohttp import AIOHTTPTransport' : ''}
 ${config.generateAsync ? 'from gql.transport.websockets import WebsocketsTransport' : ''}
 from gql.transport.requests import RequestsHTTPTransport
 from dacite import from_dict, Config
@@ -176,7 +176,7 @@ class Client:
 
     `
         : `
-    self.__http_transport = AIOHTTPTransport(url=http_url, headers=headers, timeout=300)
+    self.__http_transport = RequestsHTTPTransport(url=http_url, headers=headers, timeout=300)
     self.__client = GqlClient(transport=self.__http_transport, fetch_schema_from_transport=False, execute_timeout=300)
 
     self.__websocket_client = WebsocketClient(url=ws_url, connection_payload=ws_connection_payload)
