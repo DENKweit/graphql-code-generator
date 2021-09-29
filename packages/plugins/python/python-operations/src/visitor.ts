@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import {
   ClientSideBaseVisitor,
   ClientSideBasePluginConfig,
@@ -265,7 +266,7 @@ response_text_promise = self.__async_client.execute_async(
 )
 response_dict = await response_text_promise`
     : `
-response_dict = self.__client.execute(
+response_dict = self._execute(
   _gql_${this._get_node_name(node)},
   variable_values=variables_no_none,
   **execute_kwargs
@@ -536,7 +537,7 @@ ${this._gql(node)}
           const selectionType = Object.assign(new PythonFieldType(responseType), {
             baseType: { type: selectionBaseTypeName },
           });
-          const selectionTypeName = wrapFieldType(selectionType, selectionType.listType, 'List');
+          const isListType = !!selectionType.listType;
           const innerClassSchema = this._schemaAST.definitions.find(d => {
             return (
               (d.kind === Kind.OBJECT_TYPE_DEFINITION || d.kind === Kind.INTERFACE_TYPE_DEFINITION) &&
@@ -579,10 +580,13 @@ ${this._gql(node)}
             return ret;
           } else {
             if (!fieldAsFragment) {
+              const safeName = this.convertSafeName(node.name.value);
+              const innerClassName = `${safeName.charAt(0).toUpperCase()}${safeName.slice(1)}Selection`;
+
               const innerClassDefinition = new PythonDeclarationBlock({})
                 .asKind('class')
                 .withDecorator('@dataclass')
-                .withName(selectionBaseTypeName)
+                .withName(innerClassName)
                 .withBlock(
                   node.selectionSet.selections
                     .map(s => {
@@ -590,8 +594,14 @@ ${this._gql(node)}
                     })
                     .join('\n')
                 ).string;
+
               return indentMultiline(
-                [innerClassDefinition, `${this.convertSafeName(node.name.value)}: ${selectionTypeName}`].join('\n')
+                [
+                  innerClassDefinition,
+                  `${this.convertSafeName(node.name.value)}: ${isListType ? 'List[' : ''}${innerClassName}${
+                    isListType ? ']' : ''
+                  }`,
+                ].join('\n')
               );
             }
             return '';

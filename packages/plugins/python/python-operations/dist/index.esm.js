@@ -260,6 +260,7 @@ const csharpKeywords = [
     'while',
 ];
 
+/* eslint-disable no-console */
 const defaultSuffix = 'GQL';
 const lowerFirstLetter = str => str.charAt(0).toLowerCase() + str.slice(1);
 const camelToSnakeCase = str => lowerFirstLetter(str).replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
@@ -417,7 +418,7 @@ response_text_promise = self.__async_client.execute_async(
 )
 response_dict = await response_text_promise`
             : `
-response_dict = self.__client.execute(
+response_dict = self._execute(
   _gql_${this._get_node_name(node)},
   variable_values=variables_no_none,
   **execute_kwargs
@@ -655,7 +656,7 @@ ${this._gql(node)}
                     const selectionType = Object.assign(new PythonFieldType(responseType), {
                         baseType: { type: selectionBaseTypeName },
                     });
-                    const selectionTypeName = wrapFieldType(selectionType, selectionType.listType, 'List');
+                    const isListType = !!selectionType.listType;
                     const innerClassSchema = this._schemaAST.definitions.find(d => {
                         return ((d.kind === Kind.OBJECT_TYPE_DEFINITION || d.kind === Kind.INTERFACE_TYPE_DEFINITION) &&
                             d.name.value === responseType.baseType.type);
@@ -691,16 +692,21 @@ ${this._gql(node)}
                     }
                     else {
                         if (!fieldAsFragment) {
+                            const safeName = this.convertSafeName(node.name.value);
+                            const innerClassName = `${safeName.charAt(0).toUpperCase()}${safeName.slice(1)}Selection`;
                             const innerClassDefinition = new PythonDeclarationBlock({})
                                 .asKind('class')
                                 .withDecorator('@dataclass')
-                                .withName(selectionBaseTypeName)
+                                .withName(innerClassName)
                                 .withBlock(node.selectionSet.selections
                                 .map(s => {
                                 return this._getResponseFieldRecursive(s, innerClassSchema, false);
                             })
                                 .join('\n')).string;
-                            return indentMultiline([innerClassDefinition, `${this.convertSafeName(node.name.value)}: ${selectionTypeName}`].join('\n'));
+                            return indentMultiline([
+                                innerClassDefinition,
+                                `${this.convertSafeName(node.name.value)}: ${isListType ? 'List[' : ''}${innerClassName}${isListType ? ']' : ''}`,
+                            ].join('\n'));
                         }
                         return '';
                     }
@@ -795,9 +801,11 @@ from typing import Any, List, Dict, Optional, Union, AsyncGenerator, Type
 from dataclasses import dataclass
 from dataclasses import asdict
 from gql import gql, Client as GqlClient
+from graphql import DocumentNode
 ${config.generateAsync ? 'from gql.transport.aiohttp import AIOHTTPTransport' : ''}
 ${config.generateAsync ? 'from gql.transport.websockets import WebsocketsTransport' : ''}
 from gql.transport.requests import RequestsHTTPTransport
+from gql.transport.exceptions import TransportQueryError
 from dacite import from_dict, Config
 from enum import Enum
 import websocket
@@ -955,10 +963,22 @@ class Client:
     `
         : `
     self.__http_transport = RequestsHTTPTransport(url=http_url, headers=headers, timeout=300)
-    self.__client = GqlClient(transport=self.__http_transport, fetch_schema_from_transport=False, execute_timeout=300)
+    self.__http_transport.connect()
 
     self.__websocket_client = WebsocketClient(url=ws_url, connection_payload=ws_connection_payload)
 
+  def _execute(self, document: DocumentNode, *args, **kwargs) -> Dict:
+    result = self.__http_transport.execute(document, *args, **kwargs)
+    if result.errors:
+      raise TransportQueryError(
+        str(result.errors[0]), errors=result.errors, data=result.data
+      )
+
+    assert (
+      result.data is not None
+    ), "Transport returned an ExecutionResult without data or errors"
+
+    return result.data
     `}
   `;
 };
