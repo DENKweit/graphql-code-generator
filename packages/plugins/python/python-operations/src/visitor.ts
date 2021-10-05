@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable no-console */
 import {
   ClientSideBaseVisitor,
@@ -27,6 +28,7 @@ import {
   isInputObjectType,
   TypeNode,
   NameNode,
+  InterfaceTypeDefinitionNode,
 } from 'graphql';
 import { PythonOperationsRawPluginConfig } from './config';
 import { Types } from '@graphql-codegen/plugin-helpers';
@@ -482,7 +484,7 @@ ${this._gql(node)}
   }
   private _getResponseFieldRecursive(
     node: OperationDefinitionNode | FieldNode | FragmentSpreadNode | InlineFragmentNode,
-    parentSchema: ObjectTypeDefinitionNode,
+    parentSchema: ObjectTypeDefinitionNode | InterfaceTypeDefinitionNode,
     fieldAsFragment: boolean,
     prepend?: string,
     addField?: FieldNode[]
@@ -615,7 +617,7 @@ ${this._gql(node)}
         }
         const fragmentParentSchema = this._schemaAST.definitions.find(
           s => s.kind === Kind.OBJECT_TYPE_DEFINITION && s.name.value === fragmentSchema.node.typeCondition.name.value
-        ) as ObjectTypeDefinitionNode | undefined;
+        ) as ObjectTypeDefinitionNode | InterfaceTypeDefinitionNode | undefined;
         if (!fragmentParentSchema) {
           throw new Error(`Fragment schema not found: ${fragmentSchema.node.typeCondition.name.value}`);
         }
@@ -635,8 +637,10 @@ ${this._gql(node)}
       case Kind.INLINE_FRAGMENT: {
         const fragmentSchemaName = node.typeCondition!.name.value;
         const fragmentSchema = this._schemaAST.definitions.find(
-          s => s.kind === Kind.OBJECT_TYPE_DEFINITION && s.name.value === fragmentSchemaName
-        ) as ObjectTypeDefinitionNode | undefined;
+          s =>
+            (s.kind === Kind.OBJECT_TYPE_DEFINITION || s.kind === Kind.INTERFACE_TYPE_DEFINITION) &&
+            s.name.value === fragmentSchemaName
+        ) as ObjectTypeDefinitionNode | InterfaceTypeDefinitionNode | undefined;
         if (!fragmentSchema) {
           throw new Error(`Fragment schema not found; ${fragmentSchemaName}`);
         }
@@ -661,7 +665,7 @@ ${this._gql(node)}
                     .map((s: FieldNode) => s.name.value)
                     .includes(s.name.value)
                   ? []
-                  : this._getResponseFieldRecursive(s, fragmentSchema, false);
+                  : this._getResponseFieldRecursive(s, parentSchema, false);
               })
               .join('\n');
         }

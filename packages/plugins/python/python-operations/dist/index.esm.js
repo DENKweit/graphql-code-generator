@@ -260,7 +260,7 @@ const csharpKeywords = [
     'while',
 ];
 
-/* eslint-disable no-console */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 const defaultSuffix = 'GQL';
 const lowerFirstLetter = str => str.charAt(0).toLowerCase() + str.slice(1);
 const camelToSnakeCase = str => lowerFirstLetter(str).replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
@@ -734,7 +734,8 @@ ${this._gql(node)}
             }
             case Kind.INLINE_FRAGMENT: {
                 const fragmentSchemaName = node.typeCondition.name.value;
-                const fragmentSchema = this._schemaAST.definitions.find(s => s.kind === Kind.OBJECT_TYPE_DEFINITION && s.name.value === fragmentSchemaName);
+                const fragmentSchema = this._schemaAST.definitions.find(s => (s.kind === Kind.OBJECT_TYPE_DEFINITION || s.kind === Kind.INTERFACE_TYPE_DEFINITION) &&
+                    s.name.value === fragmentSchemaName);
                 if (!fragmentSchema) {
                     throw new Error(`Fragment schema not found; ${fragmentSchemaName}`);
                 }
@@ -756,7 +757,7 @@ ${this._gql(node)}
                                         .map((s) => s.name.value)
                                         .includes(s.name.value)
                                     ? []
-                                    : this._getResponseFieldRecursive(s, fragmentSchema, false);
+                                    : this._getResponseFieldRecursive(s, parentSchema, false);
                             })
                                 .join('\n');
                 }
