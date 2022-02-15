@@ -105,7 +105,7 @@ class WebsocketClient:
         return response
     
   def call(self, query: str, variables, operation_name):
-    ws = websocket.create_connection(self.url,
+    ws = websocket.create_connection(self.url, timeout = 60,
                                           subprotocols=['graphql-ws'],
                                           **self.ws_options)
     try:
@@ -178,7 +178,7 @@ class Client:
 
     `
         : `
-    self.__http_transport = RequestsHTTPTransport(url=http_url, headers=headers, timeout=300)
+    self.__http_transport = RequestsHTTPTransport(url=http_url, headers=headers, timeout=10000, retries=6)
     self.__http_transport.connect()
 
     self.__websocket_client = WebsocketClient(url=ws_url, connection_payload=ws_connection_payload)
